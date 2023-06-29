@@ -1,0 +1,19 @@
+imagePullPolicy: IfNotPresent
+debug: false
+
+image:
+  registry: ghcr.io
+  repository: boxboat/k8s-tpm-device
+  tag: master
+
+device:
+  namespace: tpm.boxboat.io
+  capacity: 1
+
+podSecurityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+resources: {}
+
+tolerations: {}
