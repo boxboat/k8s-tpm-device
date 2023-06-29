@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "k8s-tpm-device.name" . }}
+  labels:
+    {{- include "k8s-tpm-device.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+    {{- include "k8s-tpm-device.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "k8s-tpm-device.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: tpm-device-plugin
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            {{- if .Values.podSecurityContext }}
+              {{- toYaml .Values.podSecurityContext | nindent 12 }}
+            {{- end }}
+          args:
+            - run
+            - --namespace
+            - {{ .Values.device.namespace }}
+            - --capacity
+            - {{ .Values.device.capacity | quote }}
+            {{- if .Values.device.debug }}
+            - --debug
+            {{- end }}
+          resources:
+          {{- if .Values.resources }}
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: tpm-device
+              mountPath: /dev/tpmrm0
+              readOnly: true
+            - name: kubelet-device-plugins
+              mountPath: /var/lib/kubelet/device-plugins
+      tolerations:
+      {{- if .Values.tolerations }}
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: tpm-device
+          hostPath:
+            path: /dev/tpmrm0
+        - name: kubelet-device-plugins
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
