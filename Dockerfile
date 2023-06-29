@@ -4,7 +4,7 @@ ARG GO_VERSION=1.20.4
 FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION}-alpine as build
 
 RUN apk --no-cache add make ca-certificates
-RUN adduser -D zap
+RUN adduser -D tpm
 WORKDIR /src
 COPY go.mod go.sum /src/
 RUN go mod download
