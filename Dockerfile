@@ -21,4 +21,4 @@ FROM --platform=${TARGETPLATFORM} gcr.io/distroless/static as release
 COPY --from=build /etc/passwd /etc/group /etc/
 COPY --from=build /src/bin/k8s-tpm-device /bin/k8s-tpm-device
 USER tpm
-ENTRYPOINT ["/bin/zap"]
+ENTRYPOINT ["/bin/k8s-tpm-device"]
