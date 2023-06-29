@@ -15,6 +15,10 @@
 package cmd
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/boxboat/k8s-tpm-device/pkg/common"
 	"github.com/boxboat/k8s-tpm-device/pkg/plugin"
 	"github.com/intel/intel-device-plugins-for-kubernetes/pkg/deviceplugin"
@@ -37,6 +41,11 @@ func runPlugin() {
 	go func() {
 		manager.Run()
 	}()
+	
+	// listen for shutdown signal
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+	<-signalChan
 }
 
 var runCmd = &cobra.Command{
