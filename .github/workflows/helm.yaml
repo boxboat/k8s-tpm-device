@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'chart/**'
+      - '.github/workflows/helm.yaml'
     branches:
       - master
     tags:
@@ -34,7 +35,7 @@ jobs:
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@be16258da8010256c6e82849661221415f031968
         with:
-          charts_dir: helm/charts
-          config: helm/cr.yaml
+          charts_dir: chart
+          config: chart/cr.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
