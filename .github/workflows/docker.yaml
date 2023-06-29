@@ -1,0 +1,127 @@
+name: docker
+
+on:
+  push:
+    paths:
+      - '**'
+      - '!**.md'
+      - '!LICENSE'
+      - '!chart/**'
+    branches:
+      - master
+      - feature-*
+    tags:
+      - '*'
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: 'write'
+      packages: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Compute Version
+        id: version
+        run: |
+          echo ${GITHUB_REF}
+          tag=${GITHUB_REF#refs/tags/}
+          publish="no"
+          if [ "${tag}" != "${GITHUB_REF}" ]; then
+            tag=$(echo "${tag}" | sed -e 's/[^a-zA-Z0-9\-\.]/-/g')
+            version=${tag}
+            publish="yes"
+          fi
+
+          branch=${GITHUB_REF#refs/heads/}
+          if [[ -z "${version}" && "${branch}" != "${GITHUB_REF}" ]]; then
+            branch=$(echo "${branch}" | sed -e 's/[^a-zA-Z0-9\-\.]/-/g')
+            version=${branch}
+            if [[ ${branch} = "master" || ${branch} = feature-* ]]; then
+              publish="yes"
+            fi
+          fi
+
+          pr=${GITHUB_REF#refs/pull/}
+          if [[ -z "${version}" && "${pr}" != "${GITHUB_REF}" ]]; then
+            pr=$(echo "${pr}" | sed -e 's/[^a-zA-Z0-9\-\.]/-/g')
+            version=${pr}
+          fi
+
+          if [ -z "${version}" ]; then
+            echo "Version could not be determined" >&2
+            exit 1
+          else
+            echo CI_VERSION=${version} >> $GITHUB_ENV
+            echo PUBLISH=${publish} >> $GITHUB_ENV
+          fi
+
+      - name: Set up QEMU
+        if: ${{ env.PUBLISH == 'yes' }}
+        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7
+
+      - name: Set up Buildx
+        if: ${{ env.PUBLISH == 'yes' }}
+        uses: docker/setup-buildx-action@ecf95283f03858871ff00b787d79c419715afc34
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to GitHub Container Registry
+        if: ${{ env.PUBLISH == 'yes' }}
+        uses: docker/login-action@465a07811f14bebb1938fbed4728c6a1ff8901fc
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        if: ${{ env.PUBLISH == 'yes' }}
+        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825
+        id: build
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ env.CI_VERSION }}
+          tags: |
+            ghcr.io/boxboat/k8s-tpm-device:${{ env.CI_VERSION }}
+
+      - name: Generate Github-compliant SBOM for Dependency Graph
+        uses: aquasecurity/trivy-action@41f05d9ecffa2ed3f1580af306000f734b733e54
+        with:
+          scan-type: image
+          format: 'github'
+          output: 'dependency-results.sbom.json'
+          image-ref: ghcr.io/boxboat/k8s-tpm-device:${{ env.CI_VERSION }}@${{ steps.build.outputs.digest }}
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@41f05d9ecffa2ed3f1580af306000f734b733e54
+        id: create-sbom
+        with:
+          scan-type: image
+          format: cyclonedx
+          output: "sbom.cdx.json"
+          image-ref: ghcr.io/boxboat/k8s-tpm-device:${{ env.CI_VERSION }}@${{ steps.build.outputs.digest }}
+        env:
+          TRIVY_USERNAME: ${{ github.actor }}
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d13028333d784fcc802b67ec924bcebe75aa0a5f
+        with:
+          cosign-release: 'v2.0.2'
+
+      - name: Sign image
+        run: cosign sign --yes ghcr.io/boxboat/k8s-tpm-device:${{ env.CI_VERSION }}@${{ steps.build.outputs.digest }}
+
+      - name: Add CycloneDX SBOM as attestation
+        run: cosign attest --yes --type cyclonedx --predicate sbom.cdx.json ghcr.io/boxboat/k8s-tpm-device:${{ env.CI_VERSION }}@${{ steps.build.outputs.digest }}
