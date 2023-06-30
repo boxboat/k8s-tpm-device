@@ -1,6 +1,6 @@
 # k8s-tpm-device
 Kubernetes [device plugin](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/device-plugins/) 
-based on [intel-device-plugin-for-kubernetes](https://github.com/intel/intel-device-plugin-for-kubernetes)
+based on [intel-device-plugin-for-kubernetes](https://github.com/intel/intel-device-plugins-for-kubernetes)
 
 ## About
 The device plugin runs as a `DaemonSet` to register a TPM with the kubelet.
