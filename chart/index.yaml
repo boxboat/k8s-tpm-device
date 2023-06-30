@@ -2,6 +2,14 @@ apiVersion: v1
 entries:
   k8s-tpm-device:
   - apiVersion: v2
+    created: "2023-06-30T14:44:15.832971867Z"
+    description: installs the k8s-tpm-device
+    digest: d21d7b0d2bccce6df564d1abb5765b5490b5cfe215bd02cd18dbc64659d126ae
+    name: k8s-tpm-device
+    urls:
+    - https://github.com/boxboat/k8s-tpm-device/releases/download/k8s-tpm-device-0.2.0/k8s-tpm-device-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
     created: "2023-06-29T20:15:13.010717871Z"
     description: installs the k8s-tpm-device
     digest: 08e863821369c67b2fc012286a3a27d5cc1a55109e00bb769b63da2d4744cfe4
@@ -9,4 +17,4 @@ entries:
     urls:
     - https://github.com/boxboat/k8s-tpm-device/releases/download/k8s-tpm-device-0.1.1/k8s-tpm-device-0.1.1.tgz
     version: 0.1.1
-generated: "2023-06-29T20:15:13.010726371Z"
+generated: "2023-06-30T14:44:15.832978567Z"
