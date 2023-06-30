@@ -1,4 +1,8 @@
+nameOverride: ""
+fullnameOverride: ""
+
 imagePullPolicy: IfNotPresent
+imagePullSecrets: {}
 debug: false
 
 image:
@@ -10,10 +14,22 @@ device:
   namespace: tpm.boxboat.io
   capacity: 1
 
-podSecurityContext:
-  readOnlyRootFilesystem: true
-  allowPrivilegeEscalation: false
+priorityClassName: ""
 
+podAnnotations: {}
+
+# override the default podSecurityContext (defaults are commented out below)
+securityContext: {}
+#  readOnlyRootFilesystem: true
+#  allowPrivilegeEscalation: false
+
+# specify pod container resources
 resources: {}
 
+# add tolerations to the daemonset
 tolerations: {}
+
+extraVolumes: []
+extraVolumeMounts: []
+extraContainers: []
+initContainers: []

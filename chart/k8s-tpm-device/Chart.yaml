@@ -1,4 +1,4 @@
 apiVersion: v2
 name: k8s-tpm-device
 description: installs the k8s-tpm-device
-version: 0.1.1
+version: 0.2.0

@@ -12,15 +12,33 @@ spec:
     metadata:
       labels:
         {{- include "k8s-tpm-device.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- if gt (len .Values.initContainers) 0 }}
+      initContainers:
+      {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
       containers:
         - name: tpm-device-plugin
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           securityContext:
-            {{- if .Values.podSecurityContext }}
-              {{- toYaml .Values.podSecurityContext | nindent 12 }}
-            {{- end }}
+          {{- if .Values.securityContext }}
+              {{- toYaml .Values.securityContext | nindent 12 }}
+          {{ else }}
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+          {{- end }}
           args:
             - run
             - --namespace
@@ -40,8 +58,11 @@ spec:
               readOnly: true
             - name: kubelet-device-plugins
               mountPath: /var/lib/kubelet/device-plugins
-      tolerations:
+          {{- if gt (len .Values.extraVolumeMounts) 0 }}
+            {{- toYaml .Values.extraVolumeMounts | nindent 12 }}
+          {{- end }}
       {{- if .Values.tolerations }}
+      tolerations:
         {{- toYaml .Values.tolerations | nindent 8 }}
       {{- end }}
       volumes:
@@ -51,3 +72,6 @@ spec:
         - name: kubelet-device-plugins
           hostPath:
             path: /var/lib/kubelet/device-plugins
+      {{- if gt (len .Values.extraVolumes) 0 }}
+        {{- toYaml .Values.extraVolumes | nindent 8 }}
+      {{- end }}
